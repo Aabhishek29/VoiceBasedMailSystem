@@ -5,8 +5,9 @@ from tkinter import *
 import os
 import Colors
 import re
+from MailWindow import MailWindow
 from Utils import Utility
-
+import smtplib
 
 class LoginWindow():
     def __init__(self , root , util) -> None:
@@ -18,6 +19,8 @@ class LoginWindow():
         root.minsize(1080,720)
         self.e_state = 0
         self.p_state = 0
+        self.emailId = StringVar()
+        self.pswd = StringVar()
 
     def mainCanvas(self): 
         self.canvas1 = Canvas( self.root,background=Colors.color['themedark'])
@@ -34,14 +37,12 @@ class LoginWindow():
         Label(self.loginCan, text="Email", fg=Colors.color['white'], background=Colors.color['themedark'],font=('Times',18,'bold')).place(x=350,y=280)
         framenamefield = Frame(self.loginCan)
         framenamefield.place(x = 350, y=320)
-        self.email_input = Text(framenamefield,bd=0, height=1, width=40,font=('Times',16),bg=Colors.color['white'])
-        self.email_input.pack(padx=5,pady=5)
-
+        Entry(framenamefield,textvariable=self.emailId,bd=0, width=40,font=('Times',16),bg=Colors.color['white']).pack(padx=5,pady=5)
+        
         Label(self.loginCan, text="Password", fg=Colors.color['white'],background=Colors.color['themedark'], font=('Times',18,'bold')).place(x=350,y=390)
         framepassfield = Frame(self.loginCan)
         framepassfield.place( x = 350, y=430)
-        self.password_input = Text(framepassfield,bd=0, height=1, width=40,fg=Colors.color['black'],font=('Times',16),bg=Colors.color['white'])
-        self.password_input.pack(padx=5,pady=5)
+        Entry(framepassfield,show="*",textvariable=self.pswd,bd=0,  width=40,fg=Colors.color['black'],font=('Times',16),bg=Colors.color['white']).pack(padx=5,pady=5)
 
         framebtn = Frame(self.loginCan)
         framebtn.place(x= 480, y=550 )
@@ -49,16 +50,20 @@ class LoginWindow():
         self.btn.pack(ipadx=35,ipady=5,fill='both')
 
     def loginUser(self):
-        userId = self.email_input.get(1.0,"end-1c")
-        pswd = self.password_input.get(1.0,"end-1c")
+        userId = self.emailId.get()
+        pswd = self.pswd.get()
         if not (self.checkEmail(userId) and self.checkpassword(pswd)):
             print("Bad Credentials Not Passed by ")
+            return
         print(f"User id = {userId}")
         print(f"Password = {pswd}")
 
         if not self.authenticate(userId,pswd):
             Label(self.canvas1,text="wrong email/password",bg=Colors.color['themedark'],fg=Colors.color['red'],font=('Times',18)).place(x=440,y=500)
         print("Id and Password Authenticated")
+        self.root.quit()
+        win = MailWindow(tkinter.Tk())
+        win.startActivity()        
 
     def checkEmail(self,mail) -> bool:
         regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
@@ -78,7 +83,14 @@ class LoginWindow():
         return True
 
     def authenticate(self,mailId,pswd) -> bool:
-        return False
+        server = smtplib.SMTP("smtp.gmail.com",587)
+        server.starttls()
+        try:
+            server.login(mailId,pswd)
+        except Exception as e:
+            return False
+        server.close()
+        return True
 
     def startLoginWindow(self):
         self.mainCanvas()
